@@ -1,0 +1,139 @@
+body{
+font-family:'Segoe UI',sans-serif;
+margin:0;
+background:#f1f5f9;
+}
+
+/* Navbar */
+
+.navbar{
+background:#0f172a;
+color:white;
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:15px 30px;
+}
+
+.navbar h2{
+margin:0;
+}
+
+.logoutBtn{
+background:#ef4444;
+border:none;
+color:white;
+padding:8px 15px;
+cursor:pointer;
+border-radius:6px;
+}
+
+/* Container */
+
+.container{
+width:95%;
+margin:auto;
+padding-top:20px;
+}
+
+/* Sensor Cards */
+
+.cards{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+gap:20px;
+margin-top:20px;
+}
+
+.card{
+background:white;
+padding:20px;
+border-radius:12px;
+box-shadow:0 3px 10px rgba(0,0,0,0.1);
+text-align:center;
+transition:0.3s;
+}
+
+.card:hover{
+transform:translateY(-3px);
+}
+
+/* Chart */
+
+.chartBox{
+background:white;
+margin-top:30px;
+padding:20px;
+border-radius:12px;
+box-shadow:0 3px 10px rgba(0,0,0,0.1);
+}
+
+/* Table */
+
+table{
+width:100%;
+margin-top:30px;
+border-collapse:collapse;
+background:white;
+border-radius:10px;
+overflow:hidden;
+box-shadow:0 3px 10px rgba(0,0,0,0.1);
+}
+
+th{
+background:#2563eb;
+color:white;
+padding:12px;
+}
+
+td{
+padding:10px;
+border-bottom:1px solid #e5e7eb;
+text-align:center;
+}
+
+/* Login */
+
+.loginContainer{
+height:100vh;
+display:flex;
+justify-content:center;
+align-items:center;
+background:linear-gradient(135deg,#2563eb,#1e3a8a);
+}
+
+.loginBox{
+background:white;
+padding:40px;
+border-radius:12px;
+width:320px;
+text-align:center;
+}
+
+.loginBox input{
+width:100%;
+padding:10px;
+margin-top:10px;
+border-radius:6px;
+border:1px solid #ccc;
+}
+
+.loginBox button{
+width:100%;
+padding:10px;
+margin-top:15px;
+background:#2563eb;
+color:white;
+border:none;
+border-radius:6px;
+cursor:pointer;
+}
+
+.loginBox button:hover{
+background:#1d4ed8;
+}
+
+.link{
+margin-top:10px;
+font-size:14px;
+}
