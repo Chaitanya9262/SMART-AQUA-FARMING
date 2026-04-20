@@ -1,4 +1,4 @@
-import React,{useState} from "react";
+import React, { useState } from "react";
 import API from "../services/api";
 import { useNavigate } from "react-router-dom";
 
@@ -6,24 +6,38 @@ function Register(){
 
 const navigate = useNavigate();
 
-const [name,setName] = useState("");
+const [username,setUsername] = useState("");
 const [email,setEmail] = useState("");
 const [password,setPassword] = useState("");
+const [confirmPassword,setConfirmPassword] = useState("");
 const [mobile,setMobile] = useState("");
 
-const registerUser = async ()=>{
+const registerUser = async () => {
 
-await API.post("/auth/register",{
-name,
-email,
-password,
-mobile
-});
+    if(password !== confirmPassword){
+        alert("Passwords do not match");
+        return;
+    }
 
-alert("Registered Successfully");
+    try {
 
-navigate("/");
+        await API.post("/auth/register", {
+            username,
+            email,
+            password,
+            confirmPassword,
+            mobile
+        });
 
+        alert("Registered Successfully");
+        navigate("/");
+
+    } catch (err) {
+
+        console.log("ERROR:", err.response?.data);
+        alert(err.response?.data?.message || "Registration failed");
+
+    }
 };
 
 return(
@@ -35,9 +49,9 @@ return(
 <h2>Register</h2>
 
 <input
-placeholder="Name"
+placeholder="Username"
 className="form-control mb-3"
-onChange={(e)=>setName(e.target.value)}
+onChange={(e)=>setUsername(e.target.value)}
 />
 
 <input
@@ -52,6 +66,14 @@ placeholder="Password"
 className="form-control mb-3"
 onChange={(e)=>setPassword(e.target.value)}
 />
+
+<input
+type="password"
+placeholder="Confirm Password"
+className="form-control mb-3"
+onChange={(e)=>setConfirmPassword(e.target.value)}
+/>
+
 <input
 placeholder="Mobile Number"
 className="form-control mb-3"

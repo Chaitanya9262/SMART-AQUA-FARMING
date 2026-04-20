@@ -1,36 +1,42 @@
-import React,{useState} from "react";
+import React, { useState } from "react";
 import API from "../services/api";
 import { useNavigate } from "react-router-dom";
 
-function Login(){
+function Login() {
 
 const navigate = useNavigate();
 
-const [email,setEmail] = useState("");
-const [password,setPassword] = useState("");
+const [username, setUsername] = useState("");
+const [password, setPassword] = useState("");
 
-const login = async ()=>{
+const login = async () => {
 
-const res = await API.post("/auth/login",{
-email,
-password
+try {
+
+const res = await API.post("/auth/login", {
+    username,
+    password
 });
 
-if(res.data.user){
+if (res.data.user) {
 
-localStorage.setItem("user",JSON.stringify(res.data.user));
+localStorage.setItem("user", JSON.stringify(res.data.user));
 
-navigate("/dashboard");
+navigate("/home");
 
-}else{
+} else {
 
 alert("Invalid login");
 
 }
 
+} catch (err) {
+alert("Login failed");
+}
+
 };
 
-return(
+return (
 
 <div className="auth-container">
 
@@ -39,9 +45,9 @@ return(
 <h2>Aquaculture Monitoring</h2>
 
 <input
-placeholder="Email"
+placeholder="Username"
 className="form-control mb-3"
-onChange={(e)=>setEmail(e.target.value)}
+onChange={(e)=>setUsername(e.target.value)}
 />
 
 <input

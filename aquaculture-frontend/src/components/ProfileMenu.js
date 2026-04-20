@@ -2,141 +2,135 @@ import React, { useState, useRef, useEffect } from "react";
 
 function ProfileMenu() {
 
-const [open, setOpen] = useState(false);
-const [edit, setEdit] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [edit, setEdit] = useState(false);
 
-const user = JSON.parse(localStorage.getItem("user"));
+  const user = JSON.parse(localStorage.getItem("user")) || {};
 
-const [name, setName] = useState(user?.name);
-const [email, setEmail] = useState(user?.email);
-const [image, setImage] = useState(user?.image);
-const [mobile,setMobile] = useState(user?.mobile);
+  const [name, setName] = useState(user?.name || "");
+  const [email, setEmail] = useState(user?.email || "");
+  const [image, setImage] = useState(user?.image || "");
+  const [mobile, setMobile] = useState(user?.mobile || "");
 
-const menuRef = useRef();
+  const menuRef = useRef();
 
-// Close dropdown when clicking outside
-useEffect(() => {
-const handleClickOutside = (e) => {
-if (menuRef.current && !menuRef.current.contains(e.target)) {
-setOpen(false);
-}
-};
-document.addEventListener("mousedown", handleClickOutside);
-return () => document.removeEventListener("mousedown", handleClickOutside);
-}, []);
+  // ✅ CLOSE DROPDOWN OUTSIDE CLICK
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    };
 
-// Handle image upload
-const handleImage = (e) => {
-const file = e.target.files[0];
-const reader = new FileReader();
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
-reader.onloadend = () => {
-setImage(reader.result);
-};
+  // ✅ IMAGE UPLOAD
+  const handleImage = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
-reader.readAsDataURL(file);
-};
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImage(reader.result);
+    };
+    reader.readAsDataURL(file);
+  };
 
-// Save profile
-const saveProfile = () => {
+  // ✅ SAVE PROFILE
+  const saveProfile = () => {
+    const updatedUser = { ...user, name, email, mobile, image };
 
-const updatedUser = { ...user, name, email, mobile, image };
+    localStorage.setItem("user", JSON.stringify(updatedUser));
 
-localStorage.setItem("user", JSON.stringify(updatedUser));
+    setEdit(false);
+    setOpen(false);
+  };
 
-window.location.reload();
-};
+  // ✅ LOGOUT
+  const logout = () => {
+    localStorage.removeItem("user");
+    window.location.href = "/";
+  };
 
-// Logout
-const logout = () => {
-localStorage.removeItem("user");
-window.location = "/";
-};
+  return (
+    <div className="profile-container" ref={menuRef}>
 
-return (
+      {/* PROFILE ICON */}
+      <img
+        src={image || "https://cdn-icons-png.flaticon.com/512/3135/3135715.png"}
+        alt="profile"
+        className="profile-img"
+        onClick={() => setOpen(!open)}
+      />
 
-<div className="profile-container" ref={menuRef}>
+      {/* DROPDOWN */}
+      {open && (
+        <div className="profile-dropdown">
+          <p><b>{name || "User"}</b></p>
+          <p style={{ fontSize: "14px", color: "#ccc" }}>{email}</p>
 
-{/* SMALL PROFILE ICON */}
-<img
-src={image || "https://cdn-icons-png.flaticon.com/512/3135/3135715.png"}
-alt="profile"
-className="profile-img"
-onClick={() => setOpen(!open)}
-/>
+          <hr />
 
-{/* DROPDOWN */}
-{open && (
-<div className="profile-dropdown">
+          <button onClick={() => setEdit(true)} className="btn btn-primary w-100 mb-2">
+            Edit Profile
+          </button>
 
-<p><b>{user?.name}</b></p>
-<p style={{fontSize:"14px",color:"gray"}}>{user?.email}</p>
+          <button onClick={logout} className="btn btn-danger w-100">
+            Logout
+          </button>
+        </div>
+      )}
 
-<hr />
+      {/* EDIT MODAL */}
+      {edit && (
+        <div className="modal-overlay">
+          <div className="modal-box">
 
-<button onClick={()=>setEdit(true)} className="btn btn-primary w-100 mb-2">
-Edit Profile
-</button>
+            <h4>Edit Profile</h4>
 
-<button onClick={logout} className="btn btn-danger w-100">
-Logout
-</button>
+            <input
+              className="form-control mb-2"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Name"
+            />
 
-</div>
-)}
+            <input
+              className="form-control mb-2"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Email"
+            />
 
-{/* EDIT MODAL */}
-{edit && (
-<div className="modal-overlay">
+            <input
+              type="file"
+              className="form-control mb-2"
+              onChange={handleImage}
+            />
 
-<div className="modal-box">
+            <input
+              className="form-control mb-3"
+              value={mobile}
+              onChange={(e) => setMobile(e.target.value)}
+              placeholder="Mobile"
+            />
 
-<h4>Edit Profile</h4>
+            <button onClick={saveProfile} className="btn btn-success w-100 mb-2">
+              Save
+            </button>
 
-<input
-className="form-control"
-value={name}
-onChange={(e)=>setName(e.target.value)}
-placeholder="Name"
-/>
+            <button onClick={() => setEdit(false)} className="btn btn-secondary w-100">
+              Cancel
+            </button>
 
-<input
-className="form-control"
-value={email}
-onChange={(e)=>setEmail(e.target.value)}
-placeholder="Email"
-/>
+          </div>
+        </div>
+      )}
 
-<input
-type="file"
-className="form-control"
-onChange={handleImage}
-/>
-
-<input
-className="form-control"
-value={mobile}
-onChange={(e)=>setMobile(e.target.value)}
-placeholder="Mobile"
-/>
-
-<button onClick={saveProfile} className="btn btn-success">
-Save
-</button>
-
-<button onClick={()=>setEdit(false)} className="btn btn-secondary">
-Cancel
-</button>
-
-</div>
-
-</div>
-)}
-
-</div>
-
-);
-
+    </div>
+  );
 }
 
 export default ProfileMenu;

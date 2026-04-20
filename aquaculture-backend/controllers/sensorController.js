@@ -1,11 +1,13 @@
 require("dotenv").config();
 
-const db = require('../config/db');
-const generateSensorData = require('../utils/sensorSimulator');
-const predictDisease = require('../utils/diseasePredictor');
+const db = require("../config/db");
+const generateSensorData = require("../utils/sensorSimulator");
+const predictDisease = require("../utils/diseasePredictor");
 const twilio = require("twilio");
 
+// =====================================
 // ✅ WATER ANALYSIS FUNCTION
+// =====================================
 function analyzeWater(data) {
 
     let alerts = [];
@@ -64,7 +66,9 @@ function analyzeWater(data) {
     };
 }
 
-// ✅ TWILIO CLIENT
+// =====================================
+// ✅ TWILIO SETUP
+// =====================================
 const client = twilio(
     process.env.TWILIO_SID,
     process.env.TWILIO_TOKEN
@@ -73,117 +77,127 @@ const client = twilio(
 let lastDisease = "Healthy";
 
 // =====================================
-// 1️⃣ GENERATE SENSOR DATA
+// 1️⃣ GENERATE SENSOR DATA + STORE
 // =====================================
 exports.generateData = (req, res) => {
 
     const user_id = req.body.user_id;
 
+    if (!user_id) {
+        return res.status(400).json({ error: "user_id required" });
+    }
+
     const data = generateSensorData();
 
-    // ✅ ML Prediction (basic)
+    // ML Prediction
     const mlDisease = predictDisease(
         data.temperature,
         data.ph,
         data.dissolved_oxygen
     );
 
-    // ✅ RULE-BASED ANALYSIS
+    // Rule Analysis
     const analysis = analyzeWater(data);
 
-    // ✅ FINAL DISEASE (combine ML + rules)
+    // Final disease
     const finalDisease =
         analysis.disease !== "Healthy" ? analysis.disease : mlDisease;
-
-    // ✅ INSERT QUERY (UPDATED)
+if (!user_id) {
+    return res.status(400).json({ message: "User ID missing" });
+}
+    // INSERT INTO DB
     const sql = `
     INSERT INTO sensor_data
-    (user_id, temperature, ph, dissolved_oxygen, turbidity, salinity, tds, disease_prediction)
-    VALUES (?,?,?,?,?,?,?,?)
+    (user_id, temperature, ph, dissolved_oxygen, turbidity, salinity, tds, disease_prediction, status)
+    VALUES (?,?,?,?,?,?,?,?,?)
     `;
+
+    const status =
+        analysis.alerts.length > 2 ? "Danger" :
+        analysis.alerts.length > 0 ? "Risk" : "Safe";
 
     db.query(sql, [
         user_id,
-        data.temperature,
-        data.ph,
-        data.dissolved_oxygen,
-        data.turbidity,
-        data.salinity,
-        data.tds,
-        finalDisease
+        parseFloat(data.temperature),
+        parseFloat(data.ph),
+        parseFloat(data.dissolved_oxygen),
+        parseFloat(data.turbidity),
+        parseFloat(data.salinity),
+        parseFloat(data.tds),
+        finalDisease,
+        status
     ], async (err, result) => {
 
         if (err) {
             return res.status(500).json(err);
         }
 
-        // =====================================
-        // 🚨 ALERT SYSTEM (SMS + CALL)
-        // =====================================
+        // 🚨 ALERT SYSTEM
         if (finalDisease !== "Healthy" && finalDisease !== lastDisease) {
 
-            console.log("🚨 Alert:", finalDisease);
             lastDisease = finalDisease;
 
-            db.query("SELECT mobile FROM users WHERE id=?", [user_id], async (err, userRes) => {
+            db.query(
+                "SELECT mobile FROM users WHERE id=?",
+                [user_id],
+                async (err, userRes) => {
 
-                if (!err && userRes.length > 0) {
+                    if (!err && userRes.length > 0) {
 
-                    const mobile = userRes[0].mobile;
+                        const mobile = userRes[0].mobile;
 
-                    try {
+                        try {
+                            // SMS
+                            await client.messages.create({
+                                body: `⚠ Alert: ${finalDisease} detected in your pond.`,
+                                from: process.env.TWILIO_PHONE,
+                                to: "+91" + mobile
+                            });
 
-                        // 📩 SMS
-                        await client.messages.create({
-                            body: `⚠ Alert: ${finalDisease} detected in your pond.`,
-                            from: process.env.TWILIO_PHONE,
-                            to: "+91" + mobile
-                        });
+                            // CALL
+                            await client.calls.create({
+                                twiml: `<Response><Say>Warning! ${finalDisease} detected</Say></Response>`,
+                                to: "+91" + mobile,
+                                from: process.env.TWILIO_PHONE
+                            });
 
-                        console.log("SMS sent");
-
-                        // 📞 CALL
-                        await client.calls.create({
-                            twiml: `<Response><Say>Warning! ${finalDisease} detected in your aquaculture system</Say></Response>`,
-                            to: "+91" + mobile,
-                            from: process.env.TWILIO_PHONE
-                        });
-
-                        console.log("Call triggered");
-
-                    } catch (e) {
-                        console.log("Twilio Error:", e.message);
+                        } catch (e) {
+                            console.log("Twilio Error:", e.message);
+                        }
                     }
                 }
-            });
+            );
         }
 
-        // =====================================
-        // ✅ RESPONSE
-        // =====================================
         res.json({
             sensor: data,
             disease: finalDisease,
+            status,
             alerts: analysis.alerts,
             gases: analysis.gases
         });
-
     });
-
 };
 
 // =====================================
-// 2️⃣ GET LIVE DATA
+// 2️⃣ GET LIVE DATA (BY USER)
 // =====================================
 exports.getLiveData = (req, res) => {
 
+    const user_id = req.query.user_id;
+
+    if (!user_id) {
+        return res.status(400).json({ error: "user_id required" });
+    }
+
     const sql = `
     SELECT * FROM sensor_data
+    WHERE user_id = ?
     ORDER BY created_at DESC
-    LIMIT 15
+    LIMIT 100
     `;
 
-    db.query(sql, (err, result) => {
+    db.query(sql, [user_id], (err, result) => {
 
         if (err) {
             return res.status(500).json(err);
@@ -201,10 +215,9 @@ exports.getHistory = (req, res) => {
     const user_id = req.params.user_id;
 
     const sql = `
-        SELECT * FROM sensor_data
-        WHERE user_id = ?
-        ORDER BY created_at DESC
-        LIMIT 15
+    SELECT * FROM sensor_data
+    WHERE user_id = ?
+    ORDER BY created_at DESC
     `;
 
     db.query(sql, [user_id], (err, result) => {
